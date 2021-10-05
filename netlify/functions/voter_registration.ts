@@ -26,9 +26,14 @@ const daySec = 24 * 60 * 60;
 
 /** expects DD/MM/YYYY format */
 function parseDateStr(str: string): number {
-	const [dd, mm, yyyy] = str.trim().split("/");
-	const dateMs = Date.UTC(+yyyy, +mm - 1, +dd);
-	return Math.floor(dateMs / 1000);
+	try {
+		const [dd, mm, yyyy] = str.trim().split("/");
+		const dateMs = Date.UTC(+yyyy, +mm - 1, +dd);
+		return Math.floor(dateMs / 1000);
+	} catch (err) {
+		console.error("Failed parsing date:", str);
+		throw err;
+	}
 }
 
 /** escape Discord formatting characters */
