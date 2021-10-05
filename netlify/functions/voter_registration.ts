@@ -54,6 +54,8 @@ export const handler: Handler = async (event) => {
 
 	const tsv = await fetch(VOTER_REGISTRATION_TSV_URL!).then((r) => r.text());
 
+	console.log(tsv);
+
 	const sheetLastUpdatedDateStr = tsv.split("\n")[1].split("\t")[8];
 	const sheetLastUpdatedSec = parseDateStr(sheetLastUpdatedDateStr);
 
