@@ -37,7 +37,7 @@ function parseDateStr(str: string): number {
 }
 
 /** escape Discord formatting characters */
-const escapeRaw = (s: string) => s.replaceAll(/[_~*`\\]/g, (c) => "\\" + c);
+const escapeRaw = (s: string) => s.replace(/[_~*`\\]/g, (c) => "\\" + c);
 
 export const handler: Handler = async (event) => {
 	if (event.queryStringParameters?.secret !== VOTER_REGISTRATION_SECRET) {
