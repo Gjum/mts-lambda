@@ -5,8 +5,11 @@
 		"lib": [
 			"ESNext"
 		],
+		"module": "ESNext",
+		"moduleResolution": "Node",
 		"outDir": "dist",
 		"skipLibCheck": true,
-		"strict": true
+		"strict": true,
+		"target": "ESNext"
 	}
 }

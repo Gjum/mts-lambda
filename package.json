@@ -6,6 +6,9 @@
 	"author": "Gjum",
 	"license": "MIT",
 	"private": true,
+	"scripts": {
+		"netlify-functions-dev": "netlify functions:serve -p 8080"
+	},
 	"dependencies": {
 		"node-fetch": "^3.0.0"
 	},
