@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+		"esModuleInterop": true,
+		"isolatedModules": true,
+		"lib": [
+			"ESNext"
+		],
+		"outDir": "dist",
+		"skipLibCheck": true,
+		"strict": true
+	}
+}

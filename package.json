@@ -1,0 +1,16 @@
+{
+	"name": "mts-lambda",
+	"version": "0.0.0",
+	"main": "index.js",
+	"repository": "git@github.com:Gjum/mts-lambda.git",
+	"author": "Gjum",
+	"license": "MIT",
+	"private": true,
+	"dependencies": {
+		"node-fetch": "^3.0.0"
+	},
+	"devDependencies": {
+		"@netlify/functions": "^0.7.2",
+		"@types/node-fetch": "^2.5.11"
+	}
+}
