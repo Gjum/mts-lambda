@@ -52,68 +52,84 @@ export const handler: Handler = async (event) => {
 		}
 	}
 
-	const tsv = await fetch(VOTER_REGISTRATION_TSV_URL!).then((r) => r.text());
-
-	console.log(tsv);
-
-	const sheetLastUpdatedDateStr = tsv.split("\n")[1].split("\t")[8];
-	const sheetLastUpdatedSec = parseDateStr(sheetLastUpdatedDateStr);
-
-	let fullMsgs = [];
-	let fullMsg = `Up-To-Date Voter Registration (as of <t:${sheetLastUpdatedSec}:D>)\n\nThese individuals are registered to vote in all elections, through the date listed. If your name is not currently listed, or ~~crossed out~~, you are not registered to vote.\n`;
-
-	let numPlayers = 0;
-	for (const tsvLine of tsv.split("\n").slice(tsvSkipRows)) {
-		if (!tsvLine.trim()) continue;
-		let [mcName, tag, validDateStr, expireDateStr] = tsvLine.split("\t");
-		mcName = mcName.trim();
-		tag = tag.trim();
-		const validSec = parseDateStr(validDateStr);
-		const expireSec = parseDateStr(expireDateStr);
-
-		++numPlayers;
-
-		if (expireSec < sheetLastUpdatedSec - backlogDays * daySec) continue;
-
-		const name = escapeRaw(mcName);
-
-		let line;
-		if (validSec > sheetLastUpdatedSec) {
-			line = `*~~${name}~~ (begins <t:${validSec}:D>) (valid through <t:${expireSec}:D>)*`;
-		} else if (expireSec > sheetLastUpdatedSec) {
-			line = `**${name}** (valid through <t:${expireSec}:D>)`;
-		} else {
-			line = `~~${name}~~ (ended <t:${expireSec}:D>)`;
-		}
-
-		if ((fullMsg + line).length < 2000) {
-			fullMsg += "\n" + line;
-		} else {
-			fullMsgs.push(fullMsg);
-			fullMsg = line.trim();
-		}
+	let tsv;
+	try {
+		tsv = await fetch(VOTER_REGISTRATION_TSV_URL!).then((r) => r.text());
+	} catch (err) {
+		console.error("Failed fetching spreadsheet", VOTER_REGISTRATION_TSV_URL);
+		throw err;
 	}
-	fullMsgs.push(fullMsg);
 
-	let whRes = "";
-	for (const msgId of VOTER_REGISTRATION_MSG_IDS!.split(" ")) {
-		const content = fullMsgs.shift() ?? "-";
-		whRes += await fetch(
-			`${VOTER_REGISTRATION_WEBHOOK_URL!}/messages/${msgId}`,
-			{
-				method: "patch",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({ content }),
+	try {
+		const sheetLastUpdatedDateStr = tsv.split("\n")[1].split("\t")[8];
+		const sheetLastUpdatedSec = parseDateStr(sheetLastUpdatedDateStr);
+
+		let fullMsgs = [];
+		let fullMsg = `Up-To-Date Voter Registration (as of <t:${sheetLastUpdatedSec}:D>)\n\nThese individuals are registered to vote in all elections, through the date listed. If your name is not currently listed, or ~~crossed out~~, you are not registered to vote.\n`;
+
+		let numPlayers = 0;
+		let tsvLineNr = 0;
+		for (const tsvLine of tsv.split("\n").slice(tsvSkipRows)) {
+			++tsvLineNr;
+			try {
+				if (!tsvLine.trim()) continue;
+				let [mcName, tag, validDateStr, expireDateStr] = tsvLine.split("\t");
+				mcName = mcName.trim();
+				tag = tag.trim();
+				const validSec = parseDateStr(validDateStr);
+				const expireSec = parseDateStr(expireDateStr);
+
+				++numPlayers;
+
+				if (expireSec < sheetLastUpdatedSec - backlogDays * daySec) continue;
+
+				const name = escapeRaw(mcName);
+
+				let line;
+				if (validSec > sheetLastUpdatedSec) {
+					line = `*~~${name}~~ (begins <t:${validSec}:D>) (valid through <t:${expireSec}:D>)*`;
+				} else if (expireSec > sheetLastUpdatedSec) {
+					line = `**${name}** (valid through <t:${expireSec}:D>)`;
+				} else {
+					line = `~~${name}~~ (ended <t:${expireSec}:D>)`;
+				}
+
+				if ((fullMsg + line).length < 2000) {
+					fullMsg += "\n" + line;
+				} else {
+					fullMsgs.push(fullMsg);
+					fullMsg = line.trim();
+				}
+			} catch (err) {
+				console.error("in line", tsvLineNr, tsvLine);
+				throw err;
 			}
-		).then((r) => r.text());
-		whRes += "\n";
-	}
+		}
+		fullMsgs.push(fullMsg);
 
-	return {
-		statusCode: 200,
-		body: [
-			`Last updated: ${new Date(1000 * sheetLastUpdatedSec).toISOString()}`,
-			`Players: ${numPlayers}`,
-		].join("\n"),
-	};
+		let whRes = "";
+		for (const msgId of VOTER_REGISTRATION_MSG_IDS!.split(" ")) {
+			const content = fullMsgs.shift() ?? "-";
+			whRes += await fetch(
+				`${VOTER_REGISTRATION_WEBHOOK_URL!}/messages/${msgId}`,
+				{
+					method: "patch",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ content }),
+				}
+			).then((r) => r.text());
+			whRes += "\n";
+		}
+
+		return {
+			statusCode: 200,
+			body: [
+				`Last updated: ${new Date(1000 * sheetLastUpdatedSec).toISOString()}`,
+				`Players: ${numPlayers}`,
+			].join("\n"),
+		};
+	} catch (err) {
+		console.log(tsv);
+		throw err;
+	}
 };
